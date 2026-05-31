@@ -119,7 +119,7 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col min-w-[260px] w-[260px] md:w-[280px] rounded-lg border bg-muted/30 transition-colors",
+        "flex flex-col min-w-[240px] w-[240px] md:w-[280px] rounded-lg border bg-muted/30 transition-colors touch-manipulation",
         isOver && "ring-2 ring-primary/50 bg-primary/5"
       )}
     >
@@ -216,7 +216,7 @@ export function KanbanBoard({ columns, onDragEnd, renderCard }: KanbanBoardProps
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-3 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-4 scroll-smooth touch-pan-x">
         {columns.map((column) => (
           <DroppableColumn
             key={column.id}
@@ -236,7 +236,7 @@ export function KanbanBoard({ columns, onDragEnd, renderCard }: KanbanBoardProps
       </div>
       <DragOverlay>
         {activeItem ? (
-          <div className="rounded-lg border bg-card p-3 shadow-xl opacity-90 w-[260px]">
+          <div className="rounded-lg border bg-card p-3 shadow-xl opacity-90 w-[240px] md:w-[280px]">
             {renderCard ? renderCard(activeItem) : <DefaultCard item={activeItem} />}
           </div>
         ) : null}

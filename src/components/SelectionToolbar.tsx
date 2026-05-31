@@ -21,7 +21,7 @@ export function SelectionToolbar({
   return (
     <div
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 border-t bg-background shadow-lg",
+        "fixed bottom-16 md:bottom-0 left-0 right-0 z-50 border-t bg-background shadow-lg",
         "animate-in slide-in-from-bottom-2 duration-200",
         className
       )}
