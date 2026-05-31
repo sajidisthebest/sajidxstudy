@@ -387,7 +387,7 @@ export default function SubjectsChapters() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Subjects & Chapters</h1>
           <p className="text-muted-foreground">
@@ -509,7 +509,7 @@ export default function SubjectsChapters() {
 
                       return (
                         <div key={chapter.id} className="space-y-1">
-                          <div className="flex items-center gap-2 py-2">
+                          <div className="flex flex-col gap-2 py-2">
                             <div
                               className="flex items-center gap-2 cursor-pointer flex-1"
                               onClick={() =>
@@ -528,77 +528,79 @@ export default function SubjectsChapters() {
                                 {chapter.title}
                               </span>
                             </div>
-                            <Badge
-                              className={cn(
-                                "text-xs",
-                                chapterStatusColors[chapter.status]
-                              )}
-                            >
-                              {chapterStatusLabels[chapter.status]}
-                            </Badge>
-                            <Select
-                              value={chapter.status}
-                              onValueChange={(v) =>
-                                handleChapterStatusChange(
-                                  chapter.id,
-                                  v as ChapterStatus
-                                )
-                              }
-                            >
-                              <SelectTrigger className="h-7 w-[130px] text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.entries(chapterStatusLabels).map(
-                                  ([val, label]) => (
-                                    <SelectItem key={val} value={val}>
-                                      {label}
-                                    </SelectItem>
-                                  )
+                            <div className="flex items-center gap-2 flex-wrap ml-6">
+                              <Badge
+                                className={cn(
+                                  "text-xs",
+                                  chapterStatusColors[chapter.status]
                                 )}
-                              </SelectContent>
-                            </Select>
-                            <div className="flex items-center gap-1">
-                              <Progress
-                                value={chapter.completionPercentage}
-                                className="h-2 w-16"
+                              >
+                                {chapterStatusLabels[chapter.status]}
+                              </Badge>
+                              <Select
+                                value={chapter.status}
+                                onValueChange={(v) =>
+                                  handleChapterStatusChange(
+                                    chapter.id,
+                                    v as ChapterStatus
+                                  )
+                                }
+                              >
+                                <SelectTrigger className="h-7 w-[130px] text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(chapterStatusLabels).map(
+                                    ([val, label]) => (
+                                      <SelectItem key={val} value={val}>
+                                        {label}
+                                      </SelectItem>
+                                    )
+                                  )}
+                                </SelectContent>
+                              </Select>
+                              <div className="flex items-center gap-1">
+                                <Progress
+                                  value={chapter.completionPercentage}
+                                  className="h-2 w-16"
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                  {chapter.completionPercentage}%
+                                </span>
+                              </div>
+                              <MasteryStars
+                                value={chapter.masteryLevel}
+                                size="sm"
                               />
                               <span className="text-xs text-muted-foreground">
-                                {chapter.completionPercentage}%
+                                {topics.length} topics
                               </span>
+                              {chapter.lastStudiedAt && (
+                                <span className="text-xs text-muted-foreground">
+                                  Last:{" "}
+                                  {format(
+                                    new Date(chapter.lastStudiedAt),
+                                    "MMM d"
+                                  )}
+                                </span>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => openEditChapter(chapter)}
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => handleDeleteChapter(chapter.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
                             </div>
-                            <MasteryStars
-                              value={chapter.masteryLevel}
-                              size="sm"
-                            />
-                            <span className="text-xs text-muted-foreground">
-                              {topics.length} topics
-                            </span>
-                            {chapter.lastStudiedAt && (
-                              <span className="text-xs text-muted-foreground">
-                                Last:{" "}
-                                {format(
-                                  new Date(chapter.lastStudiedAt),
-                                  "MMM d"
-                                )}
-                              </span>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => openEditChapter(chapter)}
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleDeleteChapter(chapter.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
                           </div>
 
                           {/* Expanded: Topics */}
@@ -607,7 +609,7 @@ export default function SubjectsChapters() {
                               {topics.map((topic) => (
                                 <div
                                   key={topic.id}
-                                  className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50"
+                                  className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50 flex-wrap"
                                 >
                                   <Checkbox
                                     checked={selectedTopicIds.has(topic.id)}
@@ -651,22 +653,24 @@ export default function SubjectsChapters() {
                                       Pending
                                     </Badge>
                                   )}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => openEditTopic(topic)}
-                                  >
-                                    <Edit2 className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => confirmDeleteTopic(topic)}
-                                  >
-                                    <Trash2 className="h-3 w-3 text-destructive" />
-                                  </Button>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => openEditTopic(topic)}
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => confirmDeleteTopic(topic)}
+                                    >
+                                      <Trash2 className="h-3 w-3 text-destructive" />
+                                    </Button>
+                                  </div>
                                 </div>
                               ))}
                               <Button
