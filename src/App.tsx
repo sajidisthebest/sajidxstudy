@@ -7,6 +7,7 @@ import TodayStudy from "@/pages/TodayStudy"
 import DailyLog from "@/pages/DailyLog"
 import TodoList from "@/pages/TodoList"
 import SubjectsChapters from "@/pages/SubjectsChapters"
+import Topics from "@/pages/Topics"
 import CollegeTracker from "@/pages/CollegeTracker"
 import TuitionTracker from "@/pages/TuitionTracker"
 import SelfStudyTracker from "@/pages/SelfStudyTracker"
@@ -29,6 +30,7 @@ function App() {
             <Route path="/log" element={<DailyLog />} />
             <Route path="/todos" element={<TodoList />} />
             <Route path="/subjects" element={<SubjectsChapters />} />
+            <Route path="/topics" element={<Topics />} />
             <Route path="/college" element={<CollegeTracker />} />
             <Route path="/tuition" element={<TuitionTracker />} />
             <Route path="/self-study" element={<SelfStudyTracker />} />

@@ -31,8 +31,14 @@ import {
   Clock,
   AlertTriangle,
   Tag,
+  LayoutGrid,
+  List,
+  RotateCcw,
+  BookOpen,
 } from "lucide-react"
 import { format, isToday, isTomorrow, isPast, isThisWeek, differenceInDays, parseISO, startOfDay } from "date-fns"
+
+type ViewMode = "list" | "board"
 
 const CATEGORIES = ["Study", "Personal", "Assignment", "Errand", "Health", "Work", "Other"]
 
@@ -125,12 +131,17 @@ function groupTodos(todos: Todo[]): TodoGroup[] {
 }
 
 export default function TodoList() {
-  const { getTodos, addTodo, updateTodo, deleteTodo, toggleTodo, getTopics, deleteTopic, getSubjects, getChapters } = useData()
+  const { getTodos, addTodo, updateTodo, deleteTodo, toggleTodo, getTopics, getSubjects } = useData()
   const todos = getTodos()
   const topics = getTopics()
   const subjects = getSubjects()
-  const chapters = getChapters()
 
+  // View mode state
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      return (localStorage.getItem("todo-view-mode") as ViewMode) || "board"
+    } catch { return "board" }
+  })
   // Quick add state
   const [quickAddTitle, setQuickAddTitle] = useState("")
   // Edit dialog state
@@ -147,8 +158,6 @@ export default function TodoList() {
   })
   // Filter state
   const [showCompleted, setShowCompleted] = useState(true)
-  // Topics section state
-  const [topicsSearchQuery, setTopicsSearchQuery] = useState("")
 
   const filteredTodos = useMemo(() => {
     if (showCompleted) return todos
@@ -165,16 +174,69 @@ export default function TodoList() {
 
   const completedCount = useMemo(() => todos.filter((t) => t.completed).length, [todos])
 
-  // Topics filtering
-  const filteredTopics = useMemo(() => {
-    if (!topicsSearchQuery.trim()) return topics
-    const q = topicsSearchQuery.toLowerCase()
-    return topics.filter((t) =>
-      t.title.toLowerCase().includes(q) ||
-      subjects.find((s) => s.id === t.subjectId)?.name.toLowerCase().includes(q) ||
-      chapters.find((c) => c.id === t.chapterId)?.title.toLowerCase().includes(q)
-    )
-  }, [topics, topicsSearchQuery, subjects, chapters])
+  // Auto-generated tasks from revision due and pending topics
+  const autoTasks = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0]
+    const items: { id: string; title: string; type: "revision" | "pending"; subject: string }[] = []
+
+    topics.forEach((topic) => {
+      // Revision due today or overdue
+      if (topic.nextRevisionAt) {
+        const revDate = topic.nextRevisionAt.split("T")[0]
+        if (revDate <= today && topic.status !== "completed") {
+          const subject = subjects.find((s) => s.id === topic.subjectId)
+          items.push({
+            id: `auto-rev-${topic.id}`,
+            title: `Revise: ${topic.title}`,
+            type: "revision",
+            subject: subject?.name ?? "Unknown",
+          })
+        }
+      }
+      // Pending topics
+      if (topic.isPending || topic.status === "pending") {
+        const subject = subjects.find((s) => s.id === topic.subjectId)
+        // Avoid duplicates with revision
+        if (!items.find((i) => i.id === `auto-rev-${topic.id}`)) {
+          items.push({
+            id: `auto-pend-${topic.id}`,
+            title: `Pending: ${topic.title}`,
+            type: "pending",
+            subject: subject?.name ?? "Unknown",
+          })
+        }
+      }
+    })
+
+    return items
+  }, [topics, subjects])
+
+  const toggleViewMode = (mode: ViewMode) => {
+    setViewMode(mode)
+    try { localStorage.setItem("todo-view-mode", mode) } catch {}
+  }
+
+  // Board columns for board view
+  const boardColumns = useMemo(() => {
+    const todayTodos = filteredTodos.filter((t) => isToday(parseISO(t.dueDate)))
+    const notStarted = todayTodos.filter((t) => !t.completed)
+    const completed = todayTodos.filter((t) => t.completed)
+    const overdueTodos = filteredTodos.filter((t) => {
+      const dueDate = startOfDay(parseISO(t.dueDate))
+      return isPast(dueDate) && !isToday(dueDate) && !t.completed
+    })
+    const upcomingTodos = filteredTodos.filter((t) => {
+      const dueDate = startOfDay(parseISO(t.dueDate))
+      return !isPast(dueDate) && !isToday(dueDate)
+    })
+
+    return [
+      { key: "overdue", label: "Overdue", color: "border-t-red-500", todos: overdueTodos },
+      { key: "today", label: "Today", color: "border-t-blue-500", todos: notStarted },
+      { key: "upcoming", label: "Upcoming", color: "border-t-yellow-500", todos: upcomingTodos },
+      { key: "done", label: "Done", color: "border-t-green-500", todos: completed },
+    ]
+  }, [filteredTodos])
 
   const handleQuickAdd = () => {
     if (!quickAddTitle.trim()) return
@@ -235,7 +297,7 @@ export default function TodoList() {
   const progressPercentage = todayStats.total > 0 ? Math.round((todayStats.completed / todayStats.total) * 100) : 0
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header Stats */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex-1">
@@ -269,6 +331,24 @@ export default function TodoList() {
           </div>
         </div>
         <div className="flex gap-2">
+          <div className="flex border rounded-md overflow-hidden">
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-none h-8 px-2"
+              onClick={() => toggleViewMode("list")}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "board" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-none h-8 px-2"
+              onClick={() => toggleViewMode("board")}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -305,8 +385,77 @@ export default function TodoList() {
         </CardContent>
       </Card>
 
-      {/* Todo Groups */}
-      {todoGroups.length === 0 && (
+      {/* Auto-generated Study Tasks */}
+      {autoTasks.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <BookOpen className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-primary">
+              Today&apos;s Study Tasks
+            </h2>
+            <span className="text-xs text-muted-foreground">{autoTasks.length} items from your topics</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {autoTasks.slice(0, 10).map((task) => (
+              <Card key={task.id} className={`${task.type === "revision" ? "border-l-4 border-l-orange-400" : "border-l-4 border-l-red-400"}`}>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    {task.type === "revision" ? (
+                      <RotateCcw className="h-4 w-4 text-orange-500 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{task.title}</p>
+                      <p className="text-xs text-muted-foreground">{task.subject}</p>
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] shrink-0 ${task.type === "revision" ? "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300" : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"}`}>
+                      {task.type}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {autoTasks.length > 10 && (
+            <p className="text-xs text-muted-foreground px-1">+ {autoTasks.length - 10} more tasks</p>
+          )}
+        </div>
+      )}
+
+      {/* Board View */}
+      {viewMode === "board" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {boardColumns.map((col) => (
+            <div key={col.key} className={`rounded-lg border border-t-4 ${col.color} bg-card p-3 space-y-2`}>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold">{col.label}</h3>
+                <Badge variant="secondary" className="text-xs">{col.todos.length}</Badge>
+              </div>
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                {col.todos.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-4">No tasks</p>
+                )}
+                {col.todos.map((todo) => (
+                  <BoardCard
+                    key={todo.id}
+                    todo={todo}
+                    onToggle={() => toggleTodo(todo.id)}
+                    onEdit={() => {
+                      setEditingTodo({ ...todo })
+                      setEditDialogOpen(true)
+                    }}
+                    onDelete={() => deleteTodo(todo.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* List View - Todo Groups */}
+      {viewMode === "list" && todoGroups.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <Sparkles className="h-12 w-12 mx-auto text-primary/40 mb-4" />
@@ -318,7 +467,7 @@ export default function TodoList() {
         </Card>
       )}
 
-      {todoGroups.map((group) => (
+      {viewMode === "list" && todoGroups.map((group) => (
         <div key={group.key} className="space-y-2">
           <div className="flex items-center gap-2 px-1">
             {group.isOverdue && <AlertTriangle className="h-4 w-4 text-red-500" />}
@@ -344,59 +493,6 @@ export default function TodoList() {
           </div>
         </div>
       ))}
-
-      {/* Topics Section */}
-      <div className="mt-8 space-y-3">
-        <h2 className="text-lg font-semibold">Topics</h2>
-        <Input
-          placeholder="Search topics by name, subject, or chapter..."
-          value={topicsSearchQuery}
-          onChange={(e) => setTopicsSearchQuery(e.target.value)}
-        />
-        <Card>
-          <CardContent className="p-0 divide-y">
-            {filteredTopics.length === 0 && (
-              <div className="p-6 text-center text-muted-foreground text-sm">
-                No topics found.
-              </div>
-            )}
-            {filteredTopics.slice(0, 50).map((topic) => {
-              const subject = subjects.find((s) => s.id === topic.subjectId)
-              const chapter = chapters.find((c) => c.id === topic.chapterId)
-              return (
-                <div key={topic.id} className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{topic.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {subject?.name} &bull; {chapter?.title}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-xs shrink-0">
-                    {topic.status.replace("-", " ")}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
-                    onClick={() => {
-                      if (confirm("Delete this topic? This cannot be undone.")) {
-                        deleteTopic(topic.id)
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )
-            })}
-            {filteredTopics.length > 50 && (
-              <div className="p-3 text-center text-xs text-muted-foreground">
-                Showing 50 of {filteredTopics.length} topics. Use search to narrow down.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Add Todo Dialog */}
       <Dialog open={addFormOpen} onOpenChange={setAddFormOpen}>
@@ -595,13 +691,65 @@ function TodoItem({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-0.5 shrink-0">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
             <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete}>
             <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Board Card component for board view
+function BoardCard({
+  todo,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  todo: Todo
+  onToggle: () => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const priorityConfig = PRIORITY_CONFIG[todo.priority]
+  const categoryColor = CATEGORY_COLORS[todo.category] ?? CATEGORY_COLORS.Other
+
+  return (
+    <Card className={`transition-all duration-200 hover:shadow-md ${todo.completed ? "opacity-60" : ""}`}>
+      <CardContent className="p-2.5 space-y-1.5">
+        <div className="flex items-start gap-2">
+          <button onClick={onToggle} className="mt-0.5 shrink-0">
+            {todo.completed ? (
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+            ) : (
+              <Circle className="h-4 w-4 text-muted-foreground hover:text-primary" />
+            )}
+          </button>
+          <span className={`text-xs font-medium flex-1 ${todo.completed ? "line-through text-muted-foreground" : ""}`}>
+            {todo.title}
+          </span>
+          <span className={`h-2 w-2 rounded-full ${priorityConfig.dot} shrink-0 mt-1`} />
+        </div>
+        <div className="flex items-center gap-1 flex-wrap pl-6">
+          <Badge variant="outline" className={`text-[9px] px-1 py-0 ${categoryColor} border-0`}>
+            {todo.category}
+          </Badge>
+          <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+            <Clock className="h-2 w-2" />
+            {getDateLabel(todo.dueDate)}
+          </span>
+        </div>
+        <div className="flex items-center gap-0.5 justify-end">
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onEdit}>
+            <Pencil className="h-3 w-3" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={onDelete}>
+            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       </CardContent>
