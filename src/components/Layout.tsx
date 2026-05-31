@@ -25,6 +25,12 @@ import {
   Moon,
   Sun,
   CheckSquare,
+  ChevronDown,
+  Compass,
+  ListTodo,
+  Layers,
+  Repeat,
+  SlidersHorizontal,
 } from "lucide-react"
 
 interface NavItem {
@@ -33,35 +39,148 @@ interface NavItem {
   icon: React.ReactNode
 }
 
-const navItems: NavItem[] = [
-  { label: "Dashboard", path: "/", icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: "Today's Study", path: "/today", icon: <CalendarDays className="h-5 w-5" /> },
-  { label: "Daily Log", path: "/log", icon: <PenLine className="h-5 w-5" /> },
-  { label: "Todo List", path: "/todos", icon: <CheckSquare className="h-5 w-5" /> },
-  { label: "Subjects & Chapters", path: "/subjects", icon: <BookOpen className="h-5 w-5" /> },
-  { label: "Topics", path: "/topics", icon: <FileText className="h-5 w-5" /> },
-  { label: "College Tracker", path: "/college", icon: <GraduationCap className="h-5 w-5" /> },
-  { label: "Tuition Tracker", path: "/tuition", icon: <School className="h-5 w-5" /> },
-  { label: "Self-Study", path: "/self-study", icon: <BookMarked className="h-5 w-5" /> },
-  { label: "Pending Topics", path: "/pending", icon: <AlertCircle className="h-5 w-5" /> },
-  { label: "Revision Queue", path: "/revision", icon: <RotateCcw className="h-5 w-5" /> },
-  { label: "Weekly Catch-Up", path: "/weekly", icon: <CalendarCheck className="h-5 w-5" /> },
-  { label: "Calendar", path: "/calendar", icon: <Calendar className="h-5 w-5" /> },
-  { label: "Analytics", path: "/analytics", icon: <BarChart3 className="h-5 w-5" /> },
-  { label: "Settings", path: "/settings", icon: <Settings className="h-5 w-5" /> },
+interface NavGroup {
+  label: string
+  icon: React.ReactNode
+  items: NavItem[]
+}
+
+const navGroups: NavGroup[] = [
+  {
+    label: "Overview",
+    icon: <Compass className="h-4 w-4" />,
+    items: [
+      { label: "Dashboard", path: "/", icon: <LayoutDashboard className="h-5 w-5" /> },
+      { label: "Analytics", path: "/analytics", icon: <BarChart3 className="h-5 w-5" /> },
+    ],
+  },
+  {
+    label: "Daily Workflow",
+    icon: <ListTodo className="h-4 w-4" />,
+    items: [
+      { label: "Today's Study", path: "/today", icon: <CalendarDays className="h-5 w-5" /> },
+      { label: "Daily Log", path: "/log", icon: <PenLine className="h-5 w-5" /> },
+      { label: "Todo List", path: "/todos", icon: <CheckSquare className="h-5 w-5" /> },
+      { label: "Calendar", path: "/calendar", icon: <Calendar className="h-5 w-5" /> },
+    ],
+  },
+  {
+    label: "Trackers",
+    icon: <GraduationCap className="h-4 w-4" />,
+    items: [
+      { label: "College Tracker", path: "/college", icon: <GraduationCap className="h-5 w-5" /> },
+      { label: "Tuition Tracker", path: "/tuition", icon: <School className="h-5 w-5" /> },
+      { label: "Self-Study", path: "/self-study", icon: <BookMarked className="h-5 w-5" /> },
+    ],
+  },
+  {
+    label: "Curriculum",
+    icon: <Layers className="h-4 w-4" />,
+    items: [
+      { label: "Subjects & Chapters", path: "/subjects", icon: <BookOpen className="h-5 w-5" /> },
+      { label: "Topics", path: "/topics", icon: <FileText className="h-5 w-5" /> },
+    ],
+  },
+  {
+    label: "Revision",
+    icon: <Repeat className="h-4 w-4" />,
+    items: [
+      { label: "Pending Topics", path: "/pending", icon: <AlertCircle className="h-5 w-5" /> },
+      { label: "Revision Queue", path: "/revision", icon: <RotateCcw className="h-5 w-5" /> },
+      { label: "Weekly Catch-Up", path: "/weekly", icon: <CalendarCheck className="h-5 w-5" /> },
+    ],
+  },
+  {
+    label: "System",
+    icon: <SlidersHorizontal className="h-4 w-4" />,
+    items: [
+      { label: "Settings", path: "/settings", icon: <Settings className="h-5 w-5" /> },
+    ],
+  },
 ]
 
+// Flattened list for lookups (page titles, mobile bottom nav, etc.)
+const navItems: NavItem[] = navGroups.flatMap((group) => group.items)
+
 const mobileBottomNavItems = [
-  navItems[0], // Dashboard
-  navItems[1], // Today
-  navItems[2], // Daily Log
-  navItems[7], // Pending
-  navItems[8], // Revision
+  navItems.find((n) => n.path === "/")!, // Dashboard
+  navItems.find((n) => n.path === "/today")!, // Today
+  navItems.find((n) => n.path === "/log")!, // Daily Log
+  navItems.find((n) => n.path === "/pending")!, // Pending
+  navItems.find((n) => n.path === "/revision")!, // Revision
 ]
 
 function getPageTitle(pathname: string): string {
   const item = navItems.find((n) => n.path === pathname)
   return item?.label ?? "Study Command Center"
+}
+
+interface SidebarNavProps {
+  pathname: string
+  onNavigate?: () => void
+}
+
+function SidebarNav({ pathname, onNavigate }: SidebarNavProps) {
+  // Track only explicit user toggles; groups default to open when unset.
+  const [userToggles, setUserToggles] = useState<Record<string, boolean>>({})
+
+  const toggleGroup = (label: string) => {
+    setUserToggles((prev) => ({ ...prev, [label]: !(prev[label] ?? true) }))
+  }
+
+  return (
+    <nav className="flex-1 overflow-y-auto py-4 px-3">
+      <div className="space-y-4">
+        {navGroups.map((group) => {
+          const hasActive = group.items.some((i) => i.path === pathname)
+          // Open by default; the group with the active route always stays open.
+          const isOpen = hasActive || (userToggles[group.label] ?? true)
+          return (
+            <div key={group.label}>
+              <button
+                type="button"
+                onClick={() => toggleGroup(group.label)}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors hover:text-foreground",
+                  hasActive ? "text-foreground" : "text-muted-foreground"
+                )}
+              >
+                {group.icon}
+                <span className="flex-1 text-left">{group.label}</span>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 transition-transform",
+                    isOpen ? "rotate-0" : "-rotate-90"
+                  )}
+                />
+              </button>
+              {isOpen && (
+                <ul className="mt-1 space-y-1 border-l border-border/60 pl-3 ml-3">
+                  {group.items.map((item) => (
+                    <li key={item.path}>
+                      <Link
+                        to={item.path}
+                        onClick={onNavigate}
+                        className={cn(
+                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+                          pathname === item.path
+                            ? "bg-accent text-accent-foreground"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {item.icon}
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </nav>
+  )
 }
 
 export default function Layout() {
@@ -95,26 +214,7 @@ export default function Layout() {
             <span className="font-bold text-lg">Study Center</span>
           </Link>
         </div>
-        <nav className="flex-1 overflow-y-auto py-4 px-3">
-          <ul className="space-y-1">
-            {navItems.map((item) => (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                    location.pathname === item.path
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {item.icon}
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <SidebarNav pathname={location.pathname} />
       </aside>
 
       {/* Main Content Area */}
@@ -137,27 +237,7 @@ export default function Layout() {
                   <span className="font-bold text-lg">Study Center</span>
                 </Link>
               </div>
-              <nav className="flex-1 overflow-y-auto py-4 px-3">
-                <ul className="space-y-1">
-                  {navItems.map((item) => (
-                    <li key={item.path}>
-                      <Link
-                        to={item.path}
-                        onClick={() => setSidebarOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                          location.pathname === item.path
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {item.icon}
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
+              <SidebarNav pathname={location.pathname} onNavigate={() => setSidebarOpen(false)} />
             </SheetContent>
           </Sheet>
 
