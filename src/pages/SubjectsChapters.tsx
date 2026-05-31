@@ -9,6 +9,7 @@ import {
   BookOpen,
   Clock,
   AlertCircle,
+  CheckSquare,
 } from "lucide-react"
 import { useData } from "@/context/DataContext"
 import { generateId } from "@/lib/studyLogic"
@@ -34,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { MasteryStars } from "@/components/MasteryStars"
+import { Checkbox } from "@/components/ui/checkbox"
+import { SelectionToolbar } from "@/components/SelectionToolbar"
 import { cn } from "@/lib/utils"
 import type { Subject, Chapter, Topic, ChapterStatus, TopicStatus } from "@/types"
 
@@ -109,6 +112,7 @@ export default function SubjectsChapters() {
 
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null)
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null)
+  const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set())
 
   // Subject dialog state
   const [subjectDialogOpen, setSubjectDialogOpen] = useState(false)
@@ -339,6 +343,46 @@ export default function SubjectsChapters() {
     }
   }
 
+  // Selection helpers
+  function toggleSelectTopic(id: string) {
+    setSelectedTopicIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function selectAllVisibleTopics() {
+    // Select all topics in expanded chapters
+    const visibleTopicIds: string[] = []
+    if (expandedSubject) {
+      const chapters = allChapters.filter((c) => c.subjectId === expandedSubject)
+      for (const chapter of chapters) {
+        if (expandedChapter === chapter.id) {
+          const topics = allTopics.filter((t) => t.chapterId === chapter.id)
+          visibleTopicIds.push(...topics.map((t) => t.id))
+        }
+      }
+    }
+    const allSelected = visibleTopicIds.length > 0 && visibleTopicIds.every((id) => selectedTopicIds.has(id))
+    if (allSelected) {
+      setSelectedTopicIds(new Set())
+    } else {
+      setSelectedTopicIds(new Set(visibleTopicIds))
+    }
+  }
+
+  function handleBulkDeleteTopics() {
+    selectedTopicIds.forEach((id) => deleteTopic(id))
+    setSelectedTopicIds(new Set())
+  }
+
+  function handleBulkCompleteTopics() {
+    selectedTopicIds.forEach((id) => updateTopic(id, { status: "completed" }))
+    setSelectedTopicIds(new Set())
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -348,9 +392,16 @@ export default function SubjectsChapters() {
             Manage your subjects, chapters, and topics.
           </p>
         </div>
-        <Button onClick={openAddSubject}>
-          <Plus className="mr-2 h-4 w-4" /> Add Subject
-        </Button>
+        <div className="flex items-center gap-2">
+          {expandedChapter && (
+            <Button variant="outline" size="sm" onClick={selectAllVisibleTopics}>
+              <CheckSquare className="mr-1 h-4 w-4" /> Select All Topics
+            </Button>
+          )}
+          <Button onClick={openAddSubject}>
+            <Plus className="mr-2 h-4 w-4" /> Add Subject
+          </Button>
+        </div>
       </div>
 
       {/* Subjects List */}
@@ -556,6 +607,10 @@ export default function SubjectsChapters() {
                                   key={topic.id}
                                   className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50"
                                 >
+                                  <Checkbox
+                                    checked={selectedTopicIds.has(topic.id)}
+                                    onCheckedChange={() => toggleSelectTopic(topic.id)}
+                                  />
                                   <span className="text-sm flex-1">
                                     {topic.title}
                                   </span>
@@ -639,6 +694,19 @@ export default function SubjectsChapters() {
           )
         })}
       </div>
+
+      {/* Selection Toolbar */}
+      <SelectionToolbar
+        selectedCount={selectedTopicIds.size}
+        onClearSelection={() => setSelectedTopicIds(new Set())}
+      >
+        <Button variant="outline" size="sm" onClick={handleBulkCompleteTopics}>
+          Mark Completed
+        </Button>
+        <Button variant="destructive" size="sm" onClick={handleBulkDeleteTopics}>
+          Delete Selected
+        </Button>
+      </SelectionToolbar>
 
       {/* Subject Dialog */}
       <Dialog open={subjectDialogOpen} onOpenChange={setSubjectDialogOpen}>

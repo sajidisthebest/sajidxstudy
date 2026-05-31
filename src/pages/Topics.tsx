@@ -20,8 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Trash2, Search, FileText, SlidersHorizontal } from "lucide-react"
+import { Trash2, Search, FileText, SlidersHorizontal, CheckSquare } from "lucide-react"
 import { MasteryStars } from "@/components/MasteryStars"
+import { Checkbox } from "@/components/ui/checkbox"
+import { SelectionToolbar } from "@/components/SelectionToolbar"
 
 const STATUS_OPTIONS: { value: TopicStatus | "all"; label: string }[] = [
   { value: "all", label: "All Statuses" },
@@ -55,7 +57,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 }
 
 export default function Topics() {
-  const { getTopics, deleteTopic, getSubjects, getChapters } = useData()
+  const { getTopics, deleteTopic, updateTopic, getSubjects, getChapters } = useData()
   const topics = getTopics()
   const subjects = getSubjects()
   const chapters = getChapters()
@@ -65,6 +67,7 @@ export default function Topics() {
   const [subjectFilter, setSubjectFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState("name")
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const filteredAndSortedTopics = useMemo(() => {
     let result = [...topics]
@@ -115,6 +118,35 @@ export default function Topics() {
   const handleDelete = (topicId: string) => {
     deleteTopic(topicId)
     setDeleteConfirmId(null)
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    const visibleIds = filteredAndSortedTopics.map((t) => t.id)
+    const allSelected = visibleIds.every((id) => selectedIds.has(id))
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(visibleIds))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    selectedIds.forEach((id) => deleteTopic(id))
+    setSelectedIds(new Set())
+  }
+
+  const handleBulkComplete = () => {
+    selectedIds.forEach((id) => updateTopic(id, { status: "completed" }))
+    setSelectedIds(new Set())
   }
 
   const topicToDelete = deleteConfirmId ? topics.find((t) => t.id === deleteConfirmId) : null
@@ -200,8 +232,18 @@ export default function Topics() {
       </Card>
 
       {/* Results count */}
-      <div className="text-sm text-muted-foreground px-1">
-        Showing {filteredAndSortedTopics.length} of {topics.length} topics
+      <div className="flex items-center justify-between px-1">
+        <span className="text-sm text-muted-foreground">
+          Showing {filteredAndSortedTopics.length} of {topics.length} topics
+        </span>
+        {filteredAndSortedTopics.length > 0 && (
+          <Button variant="outline" size="sm" onClick={toggleSelectAll} className="h-7 text-xs">
+            <CheckSquare className="h-3.5 w-3.5 mr-1" />
+            {filteredAndSortedTopics.every((t) => selectedIds.has(t.id))
+              ? "Deselect All"
+              : "Select All"}
+          </Button>
+        )}
       </div>
 
       {/* Topics List */}
@@ -228,6 +270,10 @@ export default function Topics() {
                   key={topic.id}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors"
                 >
+                  <Checkbox
+                    checked={selectedIds.has(topic.id)}
+                    onCheckedChange={() => toggleSelect(topic.id)}
+                  />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{topic.title}</p>
                     <p className="text-xs text-muted-foreground truncate">
@@ -265,6 +311,19 @@ export default function Topics() {
           </CardContent>
         </Card>
       )}
+
+      {/* Selection Toolbar */}
+      <SelectionToolbar
+        selectedCount={selectedIds.size}
+        onClearSelection={() => setSelectedIds(new Set())}
+      >
+        <Button variant="outline" size="sm" onClick={handleBulkComplete}>
+          Mark Completed
+        </Button>
+        <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+          Delete Selected
+        </Button>
+      </SelectionToolbar>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>

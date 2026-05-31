@@ -4,6 +4,7 @@ import { AlertCircle, BookOpen, Clock, CheckCircle2 } from "lucide-react"
 import { useData } from "@/context/DataContext"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -15,6 +16,8 @@ import { SubjectFilter } from "@/components/filters/SubjectFilter"
 import { StatusFilter } from "@/components/filters/StatusFilter"
 import { SearchInput } from "@/components/filters/SearchInput"
 import { SubjectBadge } from "@/components/SubjectBadge"
+import { Checkbox } from "@/components/ui/checkbox"
+import { SelectionToolbar } from "@/components/SelectionToolbar"
 import { cn } from "@/lib/utils"
 
 const understandingOptions = [
@@ -32,7 +35,7 @@ const logStatusOptions = [
 ]
 
 export default function CollegeTracker() {
-  const { getSubjects, getChapters, getTopics, getDailyLogs } = useData()
+  const { getSubjects, getChapters, getTopics, getDailyLogs, deleteDailyLog, updateDailyLog } = useData()
 
   const subjects = getSubjects()
   const allChapters = getChapters()
@@ -45,6 +48,7 @@ export default function CollegeTracker() {
   const [understandingFilter, setUnderstandingFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [search, setSearch] = useState("")
+  const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set())
 
   // Filter logs by source=college
   const collegeLogs = useMemo(() => {
@@ -148,6 +152,35 @@ export default function CollegeTracker() {
     return allChapters.filter((c) => chapterIds.includes(c.id))
   }, [allLogs, allChapters])
 
+  function toggleSelectLog(id: string) {
+    setSelectedLogIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAllLogs() {
+    const visibleIds = collegeLogs.map((l) => l.id)
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedLogIds.has(id))
+    if (allSelected) {
+      setSelectedLogIds(new Set())
+    } else {
+      setSelectedLogIds(new Set(visibleIds))
+    }
+  }
+
+  function handleBulkDeleteLogs() {
+    selectedLogIds.forEach((id) => deleteDailyLog(id))
+    setSelectedLogIds(new Set())
+  }
+
+  function handleBulkCompleteLogs() {
+    selectedLogIds.forEach((id) => updateDailyLog(id, { status: "completed" }))
+    setSelectedLogIds(new Set())
+  }
+
   function getSubject(id: string) {
     return subjects.find((s) => s.id === id)
   }
@@ -207,6 +240,12 @@ export default function CollegeTracker() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
+                    <th className="p-3 text-left font-medium w-10">
+                      <Checkbox
+                        checked={collegeLogs.length > 0 && collegeLogs.every((l) => selectedLogIds.has(l.id))}
+                        onCheckedChange={toggleSelectAllLogs}
+                      />
+                    </th>
                     <th className="p-3 text-left font-medium">Date</th>
                     <th className="p-3 text-left font-medium">Subject</th>
                     <th className="p-3 text-left font-medium">Chapter</th>
@@ -229,6 +268,12 @@ export default function CollegeTracker() {
                           log.status === "pending" && "bg-orange-50 dark:bg-orange-950/20"
                         )}
                       >
+                        <td className="p-3">
+                          <Checkbox
+                            checked={selectedLogIds.has(log.id)}
+                            onCheckedChange={() => toggleSelectLog(log.id)}
+                          />
+                        </td>
                         <td className="p-3 text-muted-foreground">
                           {format(new Date(log.date), "MMM d")}
                         </td>
@@ -474,6 +519,19 @@ export default function CollegeTracker() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Selection Toolbar */}
+      <SelectionToolbar
+        selectedCount={selectedLogIds.size}
+        onClearSelection={() => setSelectedLogIds(new Set())}
+      >
+        <Button variant="outline" size="sm" onClick={handleBulkCompleteLogs}>
+          Mark Completed
+        </Button>
+        <Button variant="destructive" size="sm" onClick={handleBulkDeleteLogs}>
+          Delete Selected
+        </Button>
+      </SelectionToolbar>
     </div>
   )
 }

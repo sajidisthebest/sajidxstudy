@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ExternalLink,
   Trash2,
+  CheckSquare,
 } from "lucide-react"
 import { useData } from "@/context/DataContext"
 import { generateId } from "@/lib/studyLogic"
@@ -31,6 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { SubjectBadge } from "@/components/SubjectBadge"
+import { Checkbox } from "@/components/ui/checkbox"
+import { SelectionToolbar } from "@/components/SelectionToolbar"
 import { cn } from "@/lib/utils"
 import type { Topic } from "@/types"
 
@@ -64,6 +67,8 @@ export default function SelfStudyTracker() {
     const stored = localStorage.getItem("self-study-plans")
     return stored ? JSON.parse(stored) : []
   })
+
+  const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set())
 
   function savePlans(newPlans: SelfStudyPlan[]) {
     setPlans(newPlans)
@@ -145,6 +150,50 @@ export default function SelfStudyTracker() {
       dateStudiedSelf: newStatus === "completed" ? format(new Date(), "yyyy-MM-dd") : null,
       updatedAt: now,
     })
+  }
+
+  // Selection helpers for Recent Self-Study Activity section
+  function toggleSelectTopic(id: string) {
+    setSelectedTopicIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAllTopics() {
+    const visibleIds = selfStudyTopics.slice(0, 10).map((t) => t.id)
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedTopicIds.has(id))
+    if (allSelected) {
+      setSelectedTopicIds(new Set())
+    } else {
+      setSelectedTopicIds(new Set(visibleIds))
+    }
+  }
+
+  function handleBulkComplete() {
+    const now = new Date().toISOString()
+    selectedTopicIds.forEach((id) =>
+      updateTopic(id, {
+        selfStudyStatus: "completed",
+        dateStudiedSelf: format(new Date(), "yyyy-MM-dd"),
+        updatedAt: now,
+      })
+    )
+    setSelectedTopicIds(new Set())
+  }
+
+  function handleBulkReset() {
+    const now = new Date().toISOString()
+    selectedTopicIds.forEach((id) =>
+      updateTopic(id, {
+        selfStudyStatus: "not-started",
+        dateStudiedSelf: null,
+        updatedAt: now,
+      })
+    )
+    setSelectedTopicIds(new Set())
   }
 
   function getSubject(id: string) {
@@ -358,7 +407,15 @@ export default function SelfStudyTracker() {
       {selfStudyTopics.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Recent Self-Study Activity</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Recent Self-Study Activity</CardTitle>
+              <Button variant="outline" size="sm" onClick={toggleSelectAllTopics} className="h-7 text-xs">
+                <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                {selfStudyTopics.slice(0, 10).every((t) => selectedTopicIds.has(t.id))
+                  ? "Deselect All"
+                  : "Select All"}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -369,6 +426,10 @@ export default function SelfStudyTracker() {
                     key={topic.id}
                     className="flex items-center gap-3 p-2 rounded hover:bg-muted/50"
                   >
+                    <Checkbox
+                      checked={selectedTopicIds.has(topic.id)}
+                      onCheckedChange={() => toggleSelectTopic(topic.id)}
+                    />
                     {subject && (
                       <SubjectBadge
                         name={subject.name}
@@ -403,6 +464,19 @@ export default function SelfStudyTracker() {
           </CardContent>
         </Card>
       )}
+
+      {/* Selection Toolbar */}
+      <SelectionToolbar
+        selectedCount={selectedTopicIds.size}
+        onClearSelection={() => setSelectedTopicIds(new Set())}
+      >
+        <Button variant="outline" size="sm" onClick={handleBulkComplete}>
+          Mark Completed
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleBulkReset}>
+          Reset to Not Started
+        </Button>
+      </SelectionToolbar>
 
       {/* Create Plan Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
