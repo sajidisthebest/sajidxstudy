@@ -2,6 +2,7 @@ import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Switch } from "@/components/ui/switch"
 import { TaskCard } from "@/components/TaskCard"
@@ -11,8 +12,8 @@ import { ViewToggle } from "@/components/ViewToggle"
 import { useData } from "@/context/DataContext"
 import { generateId, calculateNextRevisionDate, getOverdueTopics, getRevisionDueToday } from "@/lib/studyLogic"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { Moon, Sun, CheckCircle2, Clock, Trash2 } from "lucide-react"
+import { format, startOfWeek, addDays, parseISO, isAfter } from "date-fns"
+import { Moon, Sun, CheckCircle2, Clock, Trash2, Calendar, CalendarClock, CheckCircle } from "lucide-react"
 import type { StudyTask } from "@/types"
 
 export default function TodayStudy() {
@@ -104,6 +105,40 @@ export default function TodayStudy() {
 
   const incompleteTasks = allTasks.filter((t) => t.status !== "completed")
 
+  // Weekend topics computation
+  const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), [])
+  const thisSaturday = useMemo(() => addDays(weekStart, 5), [weekStart])
+  const thisSunday = useMemo(() => addDays(weekStart, 6), [weekStart])
+
+  const pendingTopics = useMemo(() => {
+    return data.topics.filter((t) => t.isPending || t.status === "pending")
+  }, [data.topics])
+
+  const thisWeekendTopics = useMemo(() => {
+    return pendingTopics.filter((topic) => {
+      if (!topic.scheduledWeekend) {
+        // No scheduledWeekend set means default to this weekend
+        return true
+      }
+      // Check if it falls on this weekend (Saturday or Sunday of current week)
+      const satStr = format(thisSaturday, "yyyy-MM-dd")
+      const sunStr = format(thisSunday, "yyyy-MM-dd")
+      return topic.scheduledWeekend === satStr || topic.scheduledWeekend === sunStr
+    })
+  }, [pendingTopics, thisSaturday, thisSunday])
+
+  const futureWeekendTopics = useMemo(() => {
+    return pendingTopics.filter((topic) => {
+      if (!topic.scheduledWeekend) return false
+      const scheduled = parseISO(topic.scheduledWeekend)
+      return isAfter(scheduled, thisSunday)
+    })
+  }, [pendingTopics, thisSunday])
+
+  // State for rescheduling
+  const [reschedulingTopicId, setReschedulingTopicId] = useState<string | null>(null)
+  const [rescheduleDate, setRescheduleDate] = useState("")
+
   const handleStartStudy = (task: StudyTask) => {
     if (task.id.startsWith("gen-")) {
       // Create a real task from generated one
@@ -172,6 +207,23 @@ export default function TodayStudy() {
     if (task.topicId) {
       updateTopic(task.topicId, { isPending: true, pendingReason: "Deferred from today" })
     }
+  }
+
+  const handleRescheduleTopic = (topicId: string) => {
+    if (!rescheduleDate) return
+    updateTopic(topicId, { scheduledWeekend: rescheduleDate })
+    setReschedulingTopicId(null)
+    setRescheduleDate("")
+  }
+
+  const handleCompleteWeekendTopic = (topicId: string) => {
+    updateTopic(topicId, {
+      isPending: false,
+      status: "completed",
+      scheduledWeekend: null,
+      isWeekendTask: false,
+      updatedAt: new Date().toISOString(),
+    })
   }
 
   // Group tasks by type
@@ -390,7 +442,7 @@ export default function TodayStudy() {
       ) : (
       <>
       {/* Task sections */}
-      {allTasks.length === 0 ? (
+      {allTasks.length === 0 && thisWeekendTopics.length === 0 && futureWeekendTopics.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <p>No tasks for today. Log some study to generate tasks!</p>
@@ -398,7 +450,16 @@ export default function TodayStudy() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {tasksByType.college.length > 0 && (
+          {/* Study Today Section */}
+          {allTasks.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-semibold">Study Today</h2>
+                <Badge variant="secondary" className="text-xs">{allTasks.length} tasks</Badge>
+              </div>
+
+              {tasksByType.college.length > 0 && (
             <div>
               <h2 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2">
                 <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">College</Badge>
@@ -509,6 +570,157 @@ export default function TodayStudy() {
                     onDelete={() => !task.id.startsWith("gen-") && deleteStudyTask(task.id)}
                   />
                 ))}
+              </div>
+            </div>
+          )}
+            </div>
+          )}
+
+          {/* This Weekend Section */}
+          {thisWeekendTopics.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <h2 className="text-lg font-semibold">This Weekend</h2>
+                <Badge variant="secondary" className="text-xs">{thisWeekendTopics.length} topics</Badge>
+                <span className="text-xs text-muted-foreground ml-1">
+                  {format(thisSaturday, "MMM d")} - {format(thisSunday, "MMM d")}
+                </span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {thisWeekendTopics.map((topic) => {
+                  const subject = data.subjects.find((s) => s.id === topic.subjectId)
+                  const chapter = data.chapters.find((c) => c.id === topic.chapterId)
+                  return (
+                    <Card key={topic.id} className="border-l-4 border-l-amber-400">
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{topic.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {subject?.name} {chapter ? `- ${chapter.title}` : ""}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 shrink-0">
+                            Weekend
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {reschedulingTopicId === topic.id ? (
+                            <div className="flex items-center gap-2 w-full">
+                              <Input
+                                type="date"
+                                value={rescheduleDate}
+                                onChange={(e) => setRescheduleDate(e.target.value)}
+                                className="h-8 text-xs flex-1"
+                              />
+                              <Button size="sm" variant="default" className="h-8 text-xs" onClick={() => handleRescheduleTopic(topic.id)}>
+                                Save
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setReschedulingTopicId(null); setRescheduleDate("") }}>
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => { setReschedulingTopicId(topic.id); setRescheduleDate("") }}
+                              >
+                                <CalendarClock className="h-3 w-3" />
+                                Reschedule
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1 text-green-700 hover:text-green-800 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950"
+                                onClick={() => handleCompleteWeekendTopic(topic.id)}
+                              >
+                                <CheckCircle className="h-3 w-3" />
+                                Complete
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Future Weekends Section */}
+          {futureWeekendTopics.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                <h2 className="text-lg font-semibold">Future Weekends</h2>
+                <Badge variant="secondary" className="text-xs">{futureWeekendTopics.length} topics</Badge>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {futureWeekendTopics.map((topic) => {
+                  const subject = data.subjects.find((s) => s.id === topic.subjectId)
+                  const chapter = data.chapters.find((c) => c.id === topic.chapterId)
+                  return (
+                    <Card key={topic.id} className="border-l-4 border-l-violet-400">
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{topic.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {subject?.name} {chapter ? `- ${chapter.title}` : ""}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-300 shrink-0">
+                            {topic.scheduledWeekend ? format(parseISO(topic.scheduledWeekend), "MMM d") : ""}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {reschedulingTopicId === topic.id ? (
+                            <div className="flex items-center gap-2 w-full">
+                              <Input
+                                type="date"
+                                value={rescheduleDate}
+                                onChange={(e) => setRescheduleDate(e.target.value)}
+                                className="h-8 text-xs flex-1"
+                              />
+                              <Button size="sm" variant="default" className="h-8 text-xs" onClick={() => handleRescheduleTopic(topic.id)}>
+                                Save
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setReschedulingTopicId(null); setRescheduleDate("") }}>
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => { setReschedulingTopicId(topic.id); setRescheduleDate("") }}
+                              >
+                                <CalendarClock className="h-3 w-3" />
+                                Reschedule
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1 text-green-700 hover:text-green-800 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950"
+                                onClick={() => handleCompleteWeekendTopic(topic.id)}
+                              >
+                                <CheckCircle className="h-3 w-3" />
+                                Complete
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             </div>
           )}

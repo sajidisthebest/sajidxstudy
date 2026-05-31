@@ -200,7 +200,9 @@ export default function TodoList() {
         if (!items.find((i) => i.id === `auto-rev-${topic.id}`)) {
           items.push({
             id: `auto-pend-${topic.id}`,
-            title: `Pending: ${topic.title}`,
+            title: topic.scheduledWeekend
+              ? `Weekend Study: ${topic.title}`
+              : `Pending: ${topic.title}`,
             type: "pending",
             subject: subject?.name ?? "Unknown",
           })

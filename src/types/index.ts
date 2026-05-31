@@ -57,6 +57,8 @@ export interface Topic {
   estimatedMinutes: number;
   actualMinutes: number;
   tags: string[];
+  scheduledWeekend?: string | null;
+  isWeekendTask?: boolean;
   createdAt: string;
   updatedAt: string;
 }

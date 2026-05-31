@@ -23,7 +23,7 @@ import { useData } from "@/context/DataContext"
 import { generateId, calculateNextRevisionDate } from "@/lib/studyLogic"
 import { MasteryStars } from "@/components/MasteryStars"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+import { format, startOfWeek, addDays } from "date-fns"
 import { CheckCircle2, Plus, Pencil, Trash2 } from "lucide-react"
 import type { Understanding, LogStatus, StudySource, Priority, DailyLog as DailyLogType } from "@/types"
 
@@ -181,6 +181,11 @@ export default function DailyLog() {
       (t) => t.chapterId === chapterId && t.title.toLowerCase() === topicTitle.trim().toLowerCase()
     )
 
+    // Compute upcoming Saturday for pending topics
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+    const thisSaturday = addDays(weekStart, 5)
+    const scheduledWeekendDate = format(thisSaturday, "yyyy-MM-dd")
+
     if (!existingTopic) {
       const newTopic = {
         id: generateId("top"),
@@ -208,6 +213,8 @@ export default function DailyLog() {
         estimatedMinutes: parseInt(estimatedMinutes) || 30,
         actualMinutes: parseInt(actualMinutes) || 0,
         tags,
+        scheduledWeekend: (status === "pending" || understood === "no") ? scheduledWeekendDate : null,
+        isWeekendTask: (status === "pending" || understood === "no") ? true : undefined,
         createdAt: nowStr,
         updatedAt: nowStr,
       }
@@ -233,6 +240,8 @@ export default function DailyLog() {
       if (status === "pending") {
         updates.isPending = true
         updates.pendingReason = reasonPending || "Pending"
+        updates.scheduledWeekend = scheduledWeekendDate
+        updates.isWeekendTask = true
       }
       updateTopic(existingTopic.id, updates)
     }
