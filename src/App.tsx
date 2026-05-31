@@ -5,6 +5,7 @@ import Layout from "@/components/Layout"
 import Dashboard from "@/pages/Dashboard"
 import TodayStudy from "@/pages/TodayStudy"
 import DailyLog from "@/pages/DailyLog"
+import TodoList from "@/pages/TodoList"
 import SubjectsChapters from "@/pages/SubjectsChapters"
 import CollegeTracker from "@/pages/CollegeTracker"
 import TuitionTracker from "@/pages/TuitionTracker"
@@ -26,6 +27,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/today" element={<TodayStudy />} />
             <Route path="/log" element={<DailyLog />} />
+            <Route path="/todos" element={<TodoList />} />
             <Route path="/subjects" element={<SubjectsChapters />} />
             <Route path="/college" element={<CollegeTracker />} />
             <Route path="/tuition" element={<TuitionTracker />} />

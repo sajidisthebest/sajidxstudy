@@ -96,6 +96,14 @@ export const seedData: AppData = {
     { id: "cal-3", title: "Accounting Assignment Due", date: oneWeekFromNow, type: "assignment", linkedTopicId: null, linkedTaskId: null, subjectId: "sub-2", status: "scheduled", note: "Submit before 5pm" },
   ],
   weeklyCatchUpPlans: [],
+  todos: [
+    { id: "todo-1", title: "Review Finance chapter 9 notes", description: "Go through Time Value of Money examples", dueDate: today, priority: "high", category: "Study", completed: false, completedAt: null, createdAt: now, updatedAt: now },
+    { id: "todo-2", title: "Submit Accounting assignment", description: "Trial Balance exercise from textbook page 145", dueDate: today, priority: "urgent", category: "Assignment", completed: false, completedAt: null, createdAt: now, updatedAt: now },
+    { id: "todo-3", title: "Buy new notebook for ICT", description: "", dueDate: today, priority: "low", category: "Errand", completed: true, completedAt: now, createdAt: now, updatedAt: now },
+    { id: "todo-4", title: "Practice SQL queries", description: "Complete exercises 1-10 from database chapter", dueDate: threeDaysFromNow, priority: "medium", category: "Study", completed: false, completedAt: null, createdAt: now, updatedAt: now },
+    { id: "todo-5", title: "Read Marketing chapter on Consumer Behavior", description: "Prepare for next week class", dueDate: oneWeekFromNow, priority: "medium", category: "Study", completed: false, completedAt: null, createdAt: now, updatedAt: now },
+    { id: "todo-6", title: "Call tuition teacher about schedule change", description: "", dueDate: yesterday, priority: "high", category: "Personal", completed: false, completedAt: null, createdAt: now, updatedAt: now },
+  ],
   settings: {
     theme: "light",
     revisionIntervals: { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 },

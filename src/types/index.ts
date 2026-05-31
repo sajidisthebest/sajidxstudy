@@ -142,6 +142,19 @@ export interface WeeklyCatchUpPlan {
   createdAt: string;
 }
 
+export interface Todo {
+  id: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  priority: Priority;
+  category: string;
+  completed: boolean;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AppData {
   subjects: Subject[];
   chapters: Chapter[];
@@ -151,6 +164,7 @@ export interface AppData {
   revisionRecords: RevisionRecord[];
   calendarEvents: CalendarEvent[];
   weeklyCatchUpPlans: WeeklyCatchUpPlan[];
+  todos: Todo[];
   settings: AppSettings;
 }
 

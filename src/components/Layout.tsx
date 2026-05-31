@@ -23,6 +23,7 @@ import {
   Plus,
   Moon,
   Sun,
+  CheckSquare,
 } from "lucide-react"
 
 interface NavItem {
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { label: "Dashboard", path: "/", icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: "Today's Study", path: "/today", icon: <CalendarDays className="h-5 w-5" /> },
   { label: "Daily Log", path: "/log", icon: <PenLine className="h-5 w-5" /> },
+  { label: "Todo List", path: "/todos", icon: <CheckSquare className="h-5 w-5" /> },
   { label: "Subjects & Chapters", path: "/subjects", icon: <BookOpen className="h-5 w-5" /> },
   { label: "College Tracker", path: "/college", icon: <GraduationCap className="h-5 w-5" /> },
   { label: "Tuition Tracker", path: "/tuition", icon: <School className="h-5 w-5" /> },

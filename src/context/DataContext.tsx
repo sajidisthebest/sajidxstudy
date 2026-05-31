@@ -12,6 +12,7 @@ import type {
   RevisionRecord,
   CalendarEvent,
   WeeklyCatchUpPlan,
+  Todo,
 } from "@/types"
 
 interface DataContextType {
@@ -53,6 +54,12 @@ interface DataContextType {
   getWeeklyCatchUpPlans: () => WeeklyCatchUpPlan[]
   addWeeklyCatchUpPlan: (plan: WeeklyCatchUpPlan) => void
   updateWeeklyCatchUpPlan: (id: string, updates: Partial<WeeklyCatchUpPlan>) => void
+  // Todos
+  getTodos: () => Todo[]
+  addTodo: (todo: Todo) => void
+  updateTodo: (id: string, updates: Partial<Todo>) => void
+  deleteTodo: (id: string) => void
+  toggleTodo: (id: string) => void
   // Settings
   getSettings: () => AppSettings
   updateSettings: (updates: Partial<AppSettings>) => void
@@ -189,6 +196,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }))
   }, [setData])
 
+  // Todos
+  const getTodos = useCallback(() => data.todos ?? [], [data.todos])
+  const addTodo = useCallback((todo: Todo) => {
+    setData((prev) => ({ ...prev, todos: [...(prev.todos ?? []), todo] }))
+  }, [setData])
+  const updateTodo = useCallback((id: string, updates: Partial<Todo>) => {
+    setData((prev) => ({
+      ...prev,
+      todos: (prev.todos ?? []).map((t) => (t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t)),
+    }))
+  }, [setData])
+  const deleteTodo = useCallback((id: string) => {
+    setData((prev) => ({ ...prev, todos: (prev.todos ?? []).filter((t) => t.id !== id) }))
+  }, [setData])
+  const toggleTodo = useCallback((id: string) => {
+    setData((prev) => ({
+      ...prev,
+      todos: (prev.todos ?? []).map((t) =>
+        t.id === id
+          ? { ...t, completed: !t.completed, completedAt: !t.completed ? new Date().toISOString() : null, updatedAt: new Date().toISOString() }
+          : t
+      ),
+    }))
+  }, [setData])
+
   // Settings
   const getSettings = useCallback(() => data.settings, [data.settings])
   const updateSettings = useCallback((updates: Partial<AppSettings>) => {
@@ -226,6 +258,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getWeeklyCatchUpPlans,
     addWeeklyCatchUpPlan,
     updateWeeklyCatchUpPlan,
+    getTodos,
+    addTodo,
+    updateTodo,
+    deleteTodo,
+    toggleTodo,
     getSettings,
     updateSettings,
   }
