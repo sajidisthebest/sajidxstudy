@@ -246,41 +246,66 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {/* Revision Intervals */}
+      {/* Study Preferences */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Revision Intervals</CardTitle>
+          <CardTitle className="text-base">Study Preferences</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((level) => (
-              <div key={level} className="flex items-center gap-3">
-                <span className="text-sm font-medium w-24">Mastery {level}:</span>
-                <Input
-                  type="number"
-                  min={1}
-                  value={intervals[level] ?? 7}
-                  onChange={(e) => setIntervals({ ...intervals, [level]: parseInt(e.target.value) || 1 })}
-                  className="w-20"
-                />
-                <span className="text-sm text-muted-foreground">days</span>
-              </div>
-            ))}
-            <Button size="sm" onClick={handleSaveIntervals}>
+        <CardContent className="space-y-6">
+          {/* Revision Intervals */}
+          <div>
+            <p className="text-sm font-medium mb-1">Revision Intervals</p>
+            <p className="text-xs text-muted-foreground mb-3">How many days until a topic comes back for revision, based on mastery level.</p>
+            <div className="grid gap-2">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <div key={level} className="flex items-center gap-3">
+                  <span className="text-sm w-28 text-muted-foreground">Mastery {level}:</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={intervals[level] ?? 7}
+                    onChange={(e) => setIntervals({ ...intervals, [level]: parseInt(e.target.value) || 1 })}
+                    className="w-20 h-8"
+                  />
+                  <span className="text-xs text-muted-foreground">days</span>
+                </div>
+              ))}
+            </div>
+            <Button size="sm" className="mt-3" onClick={handleSaveIntervals}>
               <Save className="h-4 w-4 mr-1" />
               Save Intervals
             </Button>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Weekly Catch-Up Days */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Weekly Catch-Up Days</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+          <hr />
+
+          {/* Daily Study Target */}
+          <div>
+            <p className="text-sm font-medium mb-1">Daily Study Target</p>
+            <p className="text-xs text-muted-foreground mb-3">Your daily study goal in hours.</p>
+            <div className="flex items-center gap-3">
+              <Input
+                type="number"
+                min={1}
+                max={16}
+                value={dailyTarget}
+                onChange={(e) => setDailyTarget(parseInt(e.target.value) || 4)}
+                className="w-20 h-8"
+              />
+              <span className="text-sm text-muted-foreground">hours per day</span>
+              <Button size="sm" onClick={handleSaveDailyTarget}>
+                <Save className="h-4 w-4 mr-1" />
+                Save
+              </Button>
+            </div>
+          </div>
+
+          <hr />
+
+          {/* Weekly Catch-Up Days */}
+          <div>
+            <p className="text-sm font-medium mb-1">Weekly Catch-Up Days</p>
+            <p className="text-xs text-muted-foreground mb-3">Select which days are your catch-up/revision days.</p>
             <div className="flex flex-wrap gap-2">
               {DAYS_OF_WEEK.map((day) => (
                 <Button
@@ -293,33 +318,9 @@ export default function Settings() {
                 </Button>
               ))}
             </div>
-            <Button size="sm" onClick={handleSaveCatchUpDays}>
+            <Button size="sm" className="mt-3" onClick={handleSaveCatchUpDays}>
               <Save className="h-4 w-4 mr-1" />
               Save Days
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Daily Study Target */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Daily Study Target</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <Input
-              type="number"
-              min={1}
-              max={16}
-              value={dailyTarget}
-              onChange={(e) => setDailyTarget(parseInt(e.target.value) || 4)}
-              className="w-20"
-            />
-            <span className="text-sm text-muted-foreground">hours per day</span>
-            <Button size="sm" onClick={handleSaveDailyTarget}>
-              <Save className="h-4 w-4 mr-1" />
-              Save
             </Button>
           </div>
         </CardContent>
@@ -365,20 +366,40 @@ export default function Settings() {
         <CardHeader>
           <CardTitle className="text-base">Data Management</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportData}>
-              <Download className="h-4 w-4 mr-1" />
-              Export Data
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleImportData}>
-              <Upload className="h-4 w-4 mr-1" />
-              Import Data
-            </Button>
+        <CardContent className="space-y-4">
+          {/* Backup & Restore */}
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Backup & Restore</p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportData}>
+                <Download className="h-4 w-4 mr-1" />
+                Export Data
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleImportData}>
+                <Upload className="h-4 w-4 mr-1" />
+                Import Data
+              </Button>
+            </div>
+          </div>
+
+          <hr />
+
+          {/* Clear Tasks */}
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Clear Data</p>
+            <p className="text-xs text-muted-foreground mb-2">Remove study tasks without affecting your topics, chapters, or settings.</p>
             <Button variant="outline" size="sm" onClick={clearAllStudyTasks}>
               <Trash2 className="h-4 w-4 mr-1" />
               Clear All Study Tasks
             </Button>
+          </div>
+
+          <hr />
+
+          {/* Danger Zone */}
+          <div>
+            <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Danger Zone</p>
+            <p className="text-xs text-muted-foreground mb-2">This will erase everything and start fresh with demo data. Cannot be undone.</p>
             <Button variant="destructive" size="sm" onClick={() => setResetDialogOpen(true)}>
               <RotateCcw className="h-4 w-4 mr-1" />
               Reset to Demo Data

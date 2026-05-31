@@ -12,11 +12,11 @@ import { useData } from "@/context/DataContext"
 import { generateId, calculateNextRevisionDate, getOverdueTopics, getRevisionDueToday } from "@/lib/studyLogic"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { Moon, Sun, CheckCircle2, Clock } from "lucide-react"
+import { Moon, Sun, CheckCircle2, Clock, Trash2 } from "lucide-react"
 import type { StudyTask } from "@/types"
 
 export default function TodayStudy() {
-  const { data, updateStudyTask, addStudyTask, addRevisionRecord, updateTopic, getSettings } = useData()
+  const { data, updateStudyTask, addStudyTask, deleteStudyTask, addRevisionRecord, updateTopic, getSettings } = useData()
   const settings = getSettings()
   const viewPref = settings.viewPreferences?.["today-study"] || "list"
   const todayStr = format(new Date(), "yyyy-MM-dd")
@@ -344,6 +344,12 @@ export default function TodayStudy() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {allTasks.length > 0 && (
+            <Button variant="outline" size="sm" className="text-xs text-muted-foreground" onClick={() => { todayTasks.forEach(t => deleteStudyTask(t.id)) }}>
+              <Trash2 className="h-3 w-3 mr-1" />
+              Clear All
+            </Button>
+          )}
           <ViewToggle pageKey="today-study" />
           <Moon className="h-4 w-4 text-muted-foreground" />
           <Switch checked={nightMode} onCheckedChange={setNightMode} />
@@ -408,6 +414,7 @@ export default function TodayStudy() {
                     onStartStudy={() => handleStartStudy(task)}
                     onMarkComplete={() => handleMarkComplete(task)}
                     onMarkPending={() => handleMarkPending(task)}
+                    onDelete={() => !task.id.startsWith("gen-") && deleteStudyTask(task.id)}
                   />
                 ))}
               </div>
@@ -430,6 +437,7 @@ export default function TodayStudy() {
                     onStartStudy={() => handleStartStudy(task)}
                     onMarkComplete={() => handleMarkComplete(task)}
                     onMarkPending={() => handleMarkPending(task)}
+                    onDelete={() => !task.id.startsWith("gen-") && deleteStudyTask(task.id)}
                   />
                 ))}
               </div>
@@ -452,6 +460,7 @@ export default function TodayStudy() {
                     onStartStudy={() => handleStartStudy(task)}
                     onMarkComplete={() => handleMarkComplete(task)}
                     onMarkPending={() => handleMarkPending(task)}
+                    onDelete={() => !task.id.startsWith("gen-") && deleteStudyTask(task.id)}
                   />
                 ))}
               </div>
@@ -474,6 +483,7 @@ export default function TodayStudy() {
                     onStartStudy={() => handleStartStudy(task)}
                     onMarkComplete={() => handleMarkComplete(task)}
                     onMarkPending={() => handleMarkPending(task)}
+                    onDelete={() => !task.id.startsWith("gen-") && deleteStudyTask(task.id)}
                   />
                 ))}
               </div>
@@ -496,6 +506,7 @@ export default function TodayStudy() {
                     onStartStudy={() => handleStartStudy(task)}
                     onMarkComplete={() => handleMarkComplete(task)}
                     onMarkPending={() => handleMarkPending(task)}
+                    onDelete={() => !task.id.startsWith("gen-") && deleteStudyTask(task.id)}
                   />
                 ))}
               </div>
