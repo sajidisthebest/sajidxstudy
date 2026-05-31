@@ -42,6 +42,9 @@ interface DataContextType {
   addStudyTask: (task: StudyTask) => void
   updateStudyTask: (id: string, updates: Partial<StudyTask>) => void
   deleteStudyTask: (id: string) => void
+  clearAllStudyTasks: () => void
+  clearTodayStudyTasks: () => void
+  cleanOrphanedStudyTasks: () => void
   // Revision Records
   getRevisionRecords: (topicId?: string) => RevisionRecord[]
   addRevisionRecord: (record: RevisionRecord) => void
@@ -82,7 +85,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }))
   }, [setData])
   const deleteSubject = useCallback((id: string) => {
-    setData((prev) => ({ ...prev, subjects: prev.subjects.filter((s) => s.id !== id) }))
+    setData((prev) => ({
+      ...prev,
+      subjects: prev.subjects.filter((s) => s.id !== id),
+      studyTasks: prev.studyTasks.filter((t) => t.subjectId !== id),
+    }))
   }, [setData])
 
   // Chapters
@@ -118,7 +125,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }))
   }, [setData])
   const deleteTopic = useCallback((id: string) => {
-    setData((prev) => ({ ...prev, topics: prev.topics.filter((t) => t.id !== id) }))
+    setData((prev) => ({
+      ...prev,
+      topics: prev.topics.filter((t) => t.id !== id),
+      studyTasks: prev.studyTasks.filter((t) => t.topicId !== id),
+    }))
   }, [setData])
 
   // Daily Logs
@@ -155,6 +166,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [setData])
   const deleteStudyTask = useCallback((id: string) => {
     setData((prev) => ({ ...prev, studyTasks: prev.studyTasks.filter((t) => t.id !== id) }))
+  }, [setData])
+
+  const clearAllStudyTasks = useCallback(() => {
+    setData((prev) => ({ ...prev, studyTasks: [] }))
+  }, [setData])
+
+  const clearTodayStudyTasks = useCallback(() => {
+    const todayStr = new Date().toISOString().split("T")[0]
+    setData((prev) => ({
+      ...prev,
+      studyTasks: prev.studyTasks.filter((t) => t.date !== todayStr),
+    }))
+  }, [setData])
+
+  const cleanOrphanedStudyTasks = useCallback(() => {
+    setData((prev) => {
+      const topicIds = new Set(prev.topics.map((t) => t.id))
+      const subjectIds = new Set(prev.subjects.map((s) => s.id))
+      const filtered = prev.studyTasks.filter((task) => {
+        // Keep tasks that have no topicId (manual tasks)
+        if (!task.topicId) return true
+        // Remove if topicId references a non-existent topic
+        if (!topicIds.has(task.topicId)) return false
+        // Remove if subjectId references a non-existent subject
+        if (!subjectIds.has(task.subjectId)) return false
+        return true
+      })
+      if (filtered.length === prev.studyTasks.length) return prev
+      return { ...prev, studyTasks: filtered }
+    })
   }, [setData])
 
   // Revision Records
@@ -249,6 +290,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addStudyTask,
     updateStudyTask,
     deleteStudyTask,
+    clearAllStudyTasks,
+    clearTodayStudyTasks,
+    cleanOrphanedStudyTasks,
     getRevisionRecords,
     addRevisionRecord,
     getCalendarEvents,

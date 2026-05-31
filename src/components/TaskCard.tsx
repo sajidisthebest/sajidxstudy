@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { SubjectBadge } from "@/components/SubjectBadge"
 import { cn } from "@/lib/utils"
-import { Clock, Play, CheckCircle2, AlertCircle, MessageSquare } from "lucide-react"
+import { Clock, Play, CheckCircle2, AlertCircle, MessageSquare, Trash2 } from "lucide-react"
 import type { StudyTask, Subject, Chapter } from "@/types"
 
 interface TaskCardProps {
@@ -14,6 +14,7 @@ interface TaskCardProps {
   onMarkComplete?: () => void
   onMarkPending?: () => void
   onAddNote?: () => void
+  onDelete?: () => void
   compact?: boolean
 }
 
@@ -46,6 +47,7 @@ export function TaskCard({
   onMarkComplete,
   onMarkPending,
   onAddNote,
+  onDelete,
   compact = false,
 }: TaskCardProps) {
   const status = statusIndicator[task.status] ?? statusIndicator["not-started"]
@@ -64,6 +66,11 @@ export function TaskCard({
           <div className="flex items-center gap-1">
             <span className={cn("h-2 w-2 rounded-full", status.color)} />
             <span className="text-xs text-muted-foreground">{status.label}</span>
+            {onDelete && (
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-600" onClick={onDelete}>
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         </div>
 

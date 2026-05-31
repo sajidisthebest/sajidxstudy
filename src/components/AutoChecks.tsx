@@ -5,18 +5,27 @@ import { checkEndOfDayPending, checkWeeklyReset, collectWeeklyCatchUpItems, buil
 
 const LAST_EOD_CHECK_KEY = "study-cc-last-eod-check"
 const LAST_WEEKLY_CHECK_KEY = "study-cc-last-weekly-check"
+const LAST_ORPHAN_CHECK_KEY = "study-cc-last-orphan-check"
 
 /**
  * AutoChecks runs on app initialization to perform:
  * 1. End-of-day auto-pending check (marks yesterday's incomplete topics as pending)
  * 2. Weekly reset logic (creates a WeeklyCatchUpPlan on Friday/Saturday)
+ * 3. Orphaned study task cleanup (removes tasks referencing deleted topics/subjects)
  */
 export function AutoChecks() {
-  const { data, updateTopic, addWeeklyCatchUpPlan, getSubjects } = useData()
+  const { data, updateTopic, addWeeklyCatchUpPlan, getSubjects, cleanOrphanedStudyTasks } = useData()
   const subjects = getSubjects()
 
   useEffect(() => {
     const todayStr = format(new Date(), "yyyy-MM-dd")
+
+    // Orphaned study task cleanup - run once per day
+    const lastOrphanCheck = localStorage.getItem(LAST_ORPHAN_CHECK_KEY)
+    if (lastOrphanCheck !== todayStr) {
+      cleanOrphanedStudyTasks()
+      localStorage.setItem(LAST_ORPHAN_CHECK_KEY, todayStr)
+    }
 
     // End-of-day pending check - run once per day
     const lastEodCheck = localStorage.getItem(LAST_EOD_CHECK_KEY)

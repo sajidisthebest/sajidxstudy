@@ -47,7 +47,7 @@ const DAYS_OF_WEEK = [
 ]
 
 export default function Settings() {
-  const { data, getSettings, updateSettings, addSubject, updateSubject, deleteSubject, getSubjects, getChapters, getTopics } = useData()
+  const { data, getSettings, updateSettings, addSubject, updateSubject, deleteSubject, getSubjects, getChapters, getTopics, clearAllStudyTasks } = useData()
   const settings = getSettings()
   const subjects = getSubjects()
   const chapters = getChapters()
@@ -374,6 +374,10 @@ export default function Settings() {
             <Button variant="outline" size="sm" onClick={handleImportData}>
               <Upload className="h-4 w-4 mr-1" />
               Import Data
+            </Button>
+            <Button variant="outline" size="sm" onClick={clearAllStudyTasks}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              Clear All Study Tasks
             </Button>
             <Button variant="destructive" size="sm" onClick={() => setResetDialogOpen(true)}>
               <RotateCcw className="h-4 w-4 mr-1" />
