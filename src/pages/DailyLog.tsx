@@ -156,6 +156,43 @@ export default function DailyLog() {
       status: editStatus,
       quickNote: editQuickNote,
     })
+
+    // Also update the linked Topic if present
+    if (editingLog.topicId) {
+      const nowStr = new Date().toISOString()
+      const weekStartVal = startOfWeek(new Date(), { weekStartsOn: 1 })
+      const thisSaturday = addDays(weekStartVal, 5)
+      const scheduledWeekendDate = format(thisSaturday, "yyyy-MM-dd")
+
+      if (editStatus === "completed") {
+        updateTopic(editingLog.topicId, {
+          status: "completed",
+          isPending: false,
+          scheduledWeekend: null,
+          isWeekendTask: false,
+          updatedAt: nowStr,
+        })
+      } else if (editStatus === "pending") {
+        updateTopic(editingLog.topicId, {
+          isPending: true,
+          pendingReason: "Pending",
+          scheduledWeekend: scheduledWeekendDate,
+          isWeekendTask: true,
+          updatedAt: nowStr,
+        })
+      }
+
+      if (editUnderstood === "no") {
+        updateTopic(editingLog.topicId, {
+          isPending: true,
+          pendingReason: "Not understood",
+          scheduledWeekend: scheduledWeekendDate,
+          isWeekendTask: true,
+          updatedAt: nowStr,
+        })
+      }
+    }
+
     setEditingLog(null)
   }
 

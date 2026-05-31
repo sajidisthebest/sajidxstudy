@@ -106,7 +106,7 @@ export default function TodayStudy() {
   const incompleteTasks = allTasks.filter((t) => t.status !== "completed")
 
   // Weekend topics computation
-  const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), [])
+  const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), [todayStr])
   const thisSaturday = useMemo(() => addDays(weekStart, 5), [weekStart])
   const thisSunday = useMemo(() => addDays(weekStart, 6), [weekStart])
 
@@ -115,15 +115,15 @@ export default function TodayStudy() {
   }, [data.topics])
 
   const thisWeekendTopics = useMemo(() => {
+    const satStr = format(thisSaturday, "yyyy-MM-dd")
+    const sunStr = format(thisSunday, "yyyy-MM-dd")
     return pendingTopics.filter((topic) => {
-      if (!topic.scheduledWeekend) {
-        // No scheduledWeekend set means default to this weekend
-        return true
+      if (topic.scheduledWeekend) {
+        // Has a scheduled weekend - check if it matches this weekend
+        return topic.scheduledWeekend === satStr || topic.scheduledWeekend === sunStr
       }
-      // Check if it falls on this weekend (Saturday or Sunday of current week)
-      const satStr = format(thisSaturday, "yyyy-MM-dd")
-      const sunStr = format(thisSunday, "yyyy-MM-dd")
-      return topic.scheduledWeekend === satStr || topic.scheduledWeekend === sunStr
+      // No scheduledWeekend set - only include if explicitly marked as weekend task
+      return topic.isWeekendTask === true
     })
   }, [pendingTopics, thisSaturday, thisSunday])
 
@@ -612,6 +612,7 @@ export default function TodayStudy() {
                                 type="date"
                                 value={rescheduleDate}
                                 onChange={(e) => setRescheduleDate(e.target.value)}
+                                min={todayStr}
                                 className="h-8 text-xs flex-1"
                               />
                               <Button size="sm" variant="default" className="h-8 text-xs" onClick={() => handleRescheduleTopic(topic.id)}>
@@ -685,6 +686,7 @@ export default function TodayStudy() {
                                 type="date"
                                 value={rescheduleDate}
                                 onChange={(e) => setRescheduleDate(e.target.value)}
+                                min={todayStr}
                                 className="h-8 text-xs flex-1"
                               />
                               <Button size="sm" variant="default" className="h-8 text-xs" onClick={() => handleRescheduleTopic(topic.id)}>
