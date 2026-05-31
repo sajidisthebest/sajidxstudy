@@ -289,9 +289,33 @@ export default function PendingTopics() {
   }, [pendingTopics])
 
   const handlePendingDragEnd = (itemId: string, _fromColumn: string, toColumn: string) => {
-    if (toColumn === "cleared") {
-      const topic = pendingTopics.find((t) => t.id === itemId)
-      if (topic) openClearDialog(topic)
+    const topic = pendingTopics.find((t) => t.id === itemId)
+    if (!topic) return
+
+    switch (toColumn) {
+      case "cleared":
+        openClearDialog(topic)
+        break
+      case "urgent":
+        updateTopic(topic.id, { priority: "urgent" })
+        break
+      case "studying":
+        updateTopic(topic.id, { status: "learning" })
+        break
+      case "new-pending":
+      case "this-week": {
+        const updates: Partial<Topic> = {}
+        if (topic.priority === "urgent" || topic.priority === "high") {
+          updates.priority = "medium"
+        }
+        if (topic.status === "learning") {
+          updates.status = "not-started"
+        }
+        if (Object.keys(updates).length > 0) {
+          updateTopic(topic.id, updates)
+        }
+        break
+      }
     }
   }
 
