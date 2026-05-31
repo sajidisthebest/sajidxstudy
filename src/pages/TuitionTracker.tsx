@@ -320,19 +320,19 @@ export default function TuitionTracker() {
               value={understandingFilter}
               onChange={setUnderstandingFilter}
               options={understandingOptions}
-              className="w-[160px]"
+              className="w-full sm:w-[160px]"
             />
             <StatusFilter
               value={statusFilter}
               onChange={setStatusFilter}
               options={logStatusOptions}
-              className="w-[160px]"
+              className="w-full sm:w-[160px]"
             />
             <SearchInput
               value={search}
               onChange={setSearch}
               placeholder="Search topics..."
-              className="w-[200px]"
+              className="w-full sm:w-[200px]"
             />
           </div>
 
@@ -366,23 +366,23 @@ export default function TuitionTracker() {
               </CardContent>
             </Card>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="p-3 text-left font-medium w-10">
+                    <th className="p-3 text-left font-medium whitespace-nowrap w-10">
                       <Checkbox
                         checked={tuitionLogs.length > 0 && tuitionLogs.every((l) => selectedLogIds.has(l.id))}
                         onCheckedChange={toggleSelectAllLogs}
                       />
                     </th>
-                    <th className="p-3 text-left font-medium">Date</th>
-                    <th className="p-3 text-left font-medium">Subject</th>
-                    <th className="p-3 text-left font-medium">Chapter</th>
-                    <th className="p-3 text-left font-medium">Topic</th>
-                    <th className="p-3 text-left font-medium">Understood?</th>
-                    <th className="p-3 text-left font-medium">Status</th>
-                    <th className="p-3 text-left font-medium">Notes</th>
+                    <th className="p-3 text-left font-medium whitespace-nowrap">Date</th>
+                    <th className="p-3 text-left font-medium whitespace-nowrap">Subject</th>
+                    <th className="p-3 text-left font-medium whitespace-nowrap">Chapter</th>
+                    <th className="p-3 text-left font-medium whitespace-nowrap">Topic</th>
+                    <th className="p-3 text-left font-medium whitespace-nowrap">Understood?</th>
+                    <th className="p-3 text-left font-medium whitespace-nowrap">Status</th>
+                    <th className="p-3 text-left font-medium whitespace-nowrap">Notes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -476,13 +476,13 @@ export default function TuitionTracker() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="p-3 text-left font-medium">Subject</th>
-                      <th className="p-3 text-left font-medium">Chapter</th>
-                      <th className="p-3 text-left font-medium">College</th>
-                      <th className="p-3 text-left font-medium">Tuition</th>
-                      <th className="p-3 text-left font-medium">Self-Study</th>
-                      <th className="p-3 text-left font-medium">Gap</th>
-                      <th className="p-3 text-left font-medium">Action Needed</th>
+                      <th className="p-3 text-left font-medium whitespace-nowrap">Subject</th>
+                      <th className="p-3 text-left font-medium whitespace-nowrap">Chapter</th>
+                      <th className="p-3 text-left font-medium whitespace-nowrap">College</th>
+                      <th className="p-3 text-left font-medium whitespace-nowrap">Tuition</th>
+                      <th className="p-3 text-left font-medium whitespace-nowrap">Self-Study</th>
+                      <th className="p-3 text-left font-medium whitespace-nowrap">Gap</th>
+                      <th className="p-3 text-left font-medium whitespace-nowrap">Action Needed</th>
                     </tr>
                   </thead>
                   <tbody>
