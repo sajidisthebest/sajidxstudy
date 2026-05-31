@@ -11,16 +11,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { useData } from "@/context/DataContext"
 import { generateId, calculateNextRevisionDate } from "@/lib/studyLogic"
 import { MasteryStars } from "@/components/MasteryStars"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { CheckCircle2, Plus } from "lucide-react"
-import type { Understanding, LogStatus, StudySource, Priority } from "@/types"
+import { CheckCircle2, Plus, Pencil, Trash2 } from "lucide-react"
+import type { Understanding, LogStatus, StudySource, Priority, DailyLog as DailyLogType } from "@/types"
 
 export default function DailyLog() {
-  const { data, addDailyLog, addTopic, addStudyTask, updateTopic, getSettings } = useData()
+  const { data, addDailyLog, addTopic, addStudyTask, updateTopic, getSettings, addChapter, deleteDailyLog, updateDailyLog } = useData()
   const settings = getSettings()
 
   const [advancedMode, setAdvancedMode] = useState(false)
@@ -59,8 +67,19 @@ export default function DailyLog() {
     [data.chapters, subjectId]
   )
 
-  const selectedSubject = data.subjects.find((s) => s.id === subjectId)
-  const showTuition = selectedSubject?.isTuitionSubject ?? false
+  // Inline chapter creation state
+  const [showNewChapterInput, setShowNewChapterInput] = useState(false)
+  const [newChapterTitle, setNewChapterTitle] = useState("")
+
+  // Edit dialog state
+  const [editingLog, setEditingLog] = useState<DailyLogType | null>(null)
+  const [editSubjectId, setEditSubjectId] = useState("")
+  const [editChapterId, setEditChapterId] = useState("")
+  const [editTopicTitle, setEditTopicTitle] = useState("")
+  const [editSource, setEditSource] = useState<StudySource>("college")
+  const [editUnderstood, setEditUnderstood] = useState<Understanding>("yes")
+  const [editStatus, setEditStatus] = useState<LogStatus>("completed")
+  const [editQuickNote, setEditQuickNote] = useState("")
 
   // Existing topics for the selected chapter (for suggestions)
   const existingTopics = useMemo(
@@ -93,6 +112,63 @@ export default function DailyLog() {
     setAttachedLink("")
     setTagsInput("")
   }
+
+  const handleAddChapter = () => {
+    if (!subjectId || !newChapterTitle.trim()) return
+    const nowStr = new Date().toISOString()
+    const newChapter = {
+      id: generateId("ch"),
+      subjectId,
+      title: newChapterTitle.trim(),
+      status: "not-started" as const,
+      completionPercentage: 0,
+      masteryLevel: 0,
+      lastStudiedAt: null,
+      nextRevisionAt: null,
+      createdAt: nowStr,
+      updatedAt: nowStr,
+    }
+    addChapter(newChapter)
+    setChapterId(newChapter.id)
+    setNewChapterTitle("")
+    setShowNewChapterInput(false)
+  }
+
+  const handleEditLog = (log: DailyLogType) => {
+    setEditingLog(log)
+    setEditSubjectId(log.subjectId)
+    setEditChapterId(log.chapterId)
+    setEditTopicTitle(log.topicTitle)
+    setEditSource(log.source)
+    setEditUnderstood(log.understood)
+    setEditStatus(log.status)
+    setEditQuickNote(log.quickNote)
+  }
+
+  const handleSaveEdit = () => {
+    if (!editingLog || !editSubjectId || !editChapterId || !editTopicTitle.trim()) return
+    updateDailyLog(editingLog.id, {
+      subjectId: editSubjectId,
+      chapterId: editChapterId,
+      topicTitle: editTopicTitle.trim(),
+      source: editSource,
+      understood: editUnderstood,
+      status: editStatus,
+      quickNote: editQuickNote,
+    })
+    setEditingLog(null)
+  }
+
+  const handleDeleteLog = (logId: string) => {
+    if (window.confirm("Are you sure you want to delete this log entry?")) {
+      deleteDailyLog(logId)
+    }
+  }
+
+  const editFilteredChapters = useMemo(
+    () => data.chapters.filter((c) => c.subjectId === editSubjectId),
+    [data.chapters, editSubjectId]
+  )
 
   const handleSave = (addAnother: boolean = false) => {
     if (!subjectId || !chapterId || !topicTitle.trim()) return
@@ -293,14 +369,46 @@ export default function DailyLog() {
           {/* Chapter */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Chapter</label>
-            <Select value={chapterId} onValueChange={setChapterId} disabled={!subjectId}>
-              <SelectTrigger><SelectValue placeholder="Select chapter" /></SelectTrigger>
-              <SelectContent>
-                {filteredChapters.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Select value={chapterId} onValueChange={setChapterId} disabled={!subjectId}>
+                  <SelectTrigger><SelectValue placeholder="Select chapter" /></SelectTrigger>
+                  <SelectContent>
+                    {filteredChapters.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={!subjectId}
+                onClick={() => setShowNewChapterInput(!showNewChapterInput)}
+                title="Add new chapter"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {showNewChapterInput && subjectId && (
+              <div className="flex gap-2 mt-2">
+                <Input
+                  value={newChapterTitle}
+                  onChange={(e) => setNewChapterTitle(e.target.value)}
+                  placeholder="New chapter name"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddChapter() }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAddChapter}
+                  disabled={!newChapterTitle.trim()}
+                >
+                  Add
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Topic */}
@@ -333,16 +441,14 @@ export default function DailyLog() {
               >
                 College
               </Button>
-              {showTuition && (
-                <Button
-                  type="button"
-                  variant={source === "tuition" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSource("tuition")}
-                >
-                  Tuition
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant={source === "tuition" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSource("tuition")}
+              >
+                Tuition
+              </Button>
               <Button
                 type="button"
                 variant={source === "self-study" ? "default" : "outline"}
@@ -619,12 +725,107 @@ export default function DailyLog() {
                   >
                     {log.status === "need-to-study-tonight" ? "Tonight" : log.status}
                   </Badge>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => handleEditLog(log)}
+                    title="Edit log"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteLog(log.id)}
+                    title="Delete log"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               )
             })}
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Log Dialog */}
+      <Dialog open={!!editingLog} onOpenChange={(open) => { if (!open) setEditingLog(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Log Entry</DialogTitle>
+            <DialogDescription>Modify the details of this log entry.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Subject</label>
+              <Select value={editSubjectId} onValueChange={(v) => { setEditSubjectId(v); setEditChapterId("") }}>
+                <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                <SelectContent>
+                  {data.subjects.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Chapter</label>
+              <Select value={editChapterId} onValueChange={setEditChapterId} disabled={!editSubjectId}>
+                <SelectTrigger><SelectValue placeholder="Select chapter" /></SelectTrigger>
+                <SelectContent>
+                  {editFilteredChapters.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Topic</label>
+              <Input value={editTopicTitle} onChange={(e) => setEditTopicTitle(e.target.value)} placeholder="Topic title" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Source</label>
+              <div className="flex gap-2">
+                <Button type="button" variant={editSource === "college" ? "default" : "outline"} size="sm" onClick={() => setEditSource("college")}>College</Button>
+                <Button type="button" variant={editSource === "tuition" ? "default" : "outline"} size="sm" onClick={() => setEditSource("tuition")}>Tuition</Button>
+                <Button type="button" variant={editSource === "self-study" ? "default" : "outline"} size="sm" onClick={() => setEditSource("self-study")}>Self-Study</Button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Understood</label>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setEditUnderstood("yes")} className={cn(editUnderstood === "yes" && "ring-2 ring-green-500 bg-green-50 dark:bg-green-950")}>Yes</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setEditUnderstood("somewhat")} className={cn(editUnderstood === "somewhat" && "ring-2 ring-yellow-500 bg-yellow-50 dark:bg-yellow-950")}>Somewhat</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setEditUnderstood("no")} className={cn(editUnderstood === "no" && "ring-2 ring-red-500 bg-red-50 dark:bg-red-950")}>No</Button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Status</label>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant={editStatus === "completed" ? "default" : "outline"} size="sm" onClick={() => setEditStatus("completed")}>Completed</Button>
+                <Button type="button" variant={editStatus === "need-to-study-tonight" ? "default" : "outline"} size="sm" onClick={() => setEditStatus("need-to-study-tonight")}>Need to Study Tonight</Button>
+                <Button type="button" variant={editStatus === "pending" ? "default" : "outline"} size="sm" onClick={() => setEditStatus("pending")}>Pending</Button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Quick Note</label>
+              <textarea
+                value={editQuickNote}
+                onChange={(e) => setEditQuickNote(e.target.value)}
+                placeholder="Any notes..."
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingLog(null)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={!editSubjectId || !editChapterId || !editTopicTitle.trim()}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
