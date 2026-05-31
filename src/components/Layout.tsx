@@ -88,12 +88,20 @@ const settingsItem: NavItem = {
   icon: <Settings className="h-5 w-5" />,
 }
 
+function findNavItem(path: string): NavItem {
+  for (const group of navGroups) {
+    const item = group.items.find((i) => i.path === path)
+    if (item) return item
+  }
+  throw new Error(`Nav item not found: ${path}`)
+}
+
 const mobileBottomNavItems: NavItem[] = [
-  navGroups[0].items[0], // Dashboard
-  navGroups[0].items[1], // Today's Study
-  navGroups[0].items[2], // Daily Log
-  navGroups[3].items[0], // Pending Topics
-  navGroups[3].items[1], // Revision Queue
+  findNavItem("/"),
+  findNavItem("/today"),
+  findNavItem("/log"),
+  findNavItem("/pending"),
+  findNavItem("/revision"),
 ]
 
 function getPageTitle(pathname: string): string {
@@ -126,6 +134,7 @@ function SidebarNav({
             <button
               type="button"
               onClick={() => onToggleGroup(group.label)}
+              aria-expanded={!isCollapsed}
               className="flex items-center justify-between w-full px-3 py-2 text-xs uppercase font-semibold text-muted-foreground tracking-wider hover:text-foreground transition-colors"
             >
               <span>{group.label}</span>
