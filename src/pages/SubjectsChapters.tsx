@@ -113,6 +113,7 @@ export default function SubjectsChapters() {
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null)
   const [expandedChapter, setExpandedChapter] = useState<string | null>(null)
   const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
 
   // Subject dialog state
   const [subjectDialogOpen, setSubjectDialogOpen] = useState(false)
@@ -376,6 +377,7 @@ export default function SubjectsChapters() {
   function handleBulkDeleteTopics() {
     selectedTopicIds.forEach((id) => deleteTopic(id))
     setSelectedTopicIds(new Set())
+    setBulkDeleteConfirmOpen(false)
   }
 
   function handleBulkCompleteTopics() {
@@ -703,7 +705,7 @@ export default function SubjectsChapters() {
         <Button variant="outline" size="sm" onClick={handleBulkCompleteTopics}>
           Mark Completed
         </Button>
-        <Button variant="destructive" size="sm" onClick={handleBulkDeleteTopics}>
+        <Button variant="destructive" size="sm" onClick={() => setBulkDeleteConfirmOpen(true)}>
           Delete Selected
         </Button>
       </SelectionToolbar>
@@ -845,6 +847,26 @@ export default function SubjectsChapters() {
             </Button>
             <Button variant="destructive" onClick={handleDeleteTopic}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={bulkDeleteConfirmOpen} onOpenChange={setBulkDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selectedTopicIds.size} Topic{selectedTopicIds.size !== 1 ? "s" : ""}</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedTopicIds.size} selected topic{selectedTopicIds.size !== 1 ? "s" : ""}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleBulkDeleteTopics}>
+              Delete {selectedTopicIds.size} Topic{selectedTopicIds.size !== 1 ? "s" : ""}
             </Button>
           </DialogFooter>
         </DialogContent>

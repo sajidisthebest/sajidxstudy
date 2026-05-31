@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useData } from "@/context/DataContext"
 import type { TopicStatus } from "@/types"
 import { Card, CardContent } from "@/components/ui/card"
@@ -68,6 +68,12 @@ export default function Topics() {
   const [sortBy, setSortBy] = useState("name")
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+
+  // Clear selection when filters change to avoid stale selections
+  useEffect(() => {
+    setSelectedIds(new Set())
+  }, [searchQuery, statusFilter, subjectFilter])
 
   const filteredAndSortedTopics = useMemo(() => {
     let result = [...topics]
@@ -131,7 +137,7 @@ export default function Topics() {
 
   const toggleSelectAll = () => {
     const visibleIds = filteredAndSortedTopics.map((t) => t.id)
-    const allSelected = visibleIds.every((id) => selectedIds.has(id))
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id))
     if (allSelected) {
       setSelectedIds(new Set())
     } else {
@@ -142,6 +148,7 @@ export default function Topics() {
   const handleBulkDelete = () => {
     selectedIds.forEach((id) => deleteTopic(id))
     setSelectedIds(new Set())
+    setBulkDeleteConfirmOpen(false)
   }
 
   const handleBulkComplete = () => {
@@ -320,7 +327,7 @@ export default function Topics() {
         <Button variant="outline" size="sm" onClick={handleBulkComplete}>
           Mark Completed
         </Button>
-        <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+        <Button variant="destructive" size="sm" onClick={() => setBulkDeleteConfirmOpen(true)}>
           Delete Selected
         </Button>
       </SelectionToolbar>
@@ -343,6 +350,26 @@ export default function Topics() {
               onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
             >
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={bulkDeleteConfirmOpen} onOpenChange={setBulkDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selectedIds.size} Topics</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedIds.size} selected topic{selectedIds.size !== 1 ? "s" : ""}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleBulkDelete}>
+              Delete {selectedIds.size} Topic{selectedIds.size !== 1 ? "s" : ""}
             </Button>
           </DialogFooter>
         </DialogContent>

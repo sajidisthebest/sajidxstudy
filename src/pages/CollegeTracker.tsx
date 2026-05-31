@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { format } from "date-fns"
 import { AlertCircle, BookOpen, Clock, CheckCircle2 } from "lucide-react"
 import { useData } from "@/context/DataContext"
@@ -18,6 +18,14 @@ import { SearchInput } from "@/components/filters/SearchInput"
 import { SubjectBadge } from "@/components/SubjectBadge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { SelectionToolbar } from "@/components/SelectionToolbar"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
 const understandingOptions = [
@@ -49,6 +57,12 @@ export default function CollegeTracker() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [search, setSearch] = useState("")
   const [selectedLogIds, setSelectedLogIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+
+  // Clear selection when filters change to avoid stale selections
+  useEffect(() => {
+    setSelectedLogIds(new Set())
+  }, [dateRange, subjectFilter, understandingFilter, statusFilter, search])
 
   // Filter logs by source=college
   const collegeLogs = useMemo(() => {
@@ -174,6 +188,7 @@ export default function CollegeTracker() {
   function handleBulkDeleteLogs() {
     selectedLogIds.forEach((id) => deleteDailyLog(id))
     setSelectedLogIds(new Set())
+    setBulkDeleteConfirmOpen(false)
   }
 
   function handleBulkCompleteLogs() {
@@ -528,10 +543,30 @@ export default function CollegeTracker() {
         <Button variant="outline" size="sm" onClick={handleBulkCompleteLogs}>
           Mark Completed
         </Button>
-        <Button variant="destructive" size="sm" onClick={handleBulkDeleteLogs}>
+        <Button variant="destructive" size="sm" onClick={() => setBulkDeleteConfirmOpen(true)}>
           Delete Selected
         </Button>
       </SelectionToolbar>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={bulkDeleteConfirmOpen} onOpenChange={setBulkDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selectedLogIds.size} Log{selectedLogIds.size !== 1 ? "s" : ""}</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedLogIds.size} selected log entr{selectedLogIds.size !== 1 ? "ies" : "y"}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleBulkDeleteLogs}>
+              Delete {selectedLogIds.size} Log{selectedLogIds.size !== 1 ? "s" : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
