@@ -230,7 +230,7 @@ export default function DailyLog() {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Daily Log</h1>
           <p className="text-muted-foreground">Log what you studied today.</p>
@@ -435,7 +435,7 @@ export default function DailyLog() {
             <div className="space-y-4 pt-4 border-t">
               <h3 className="text-sm font-semibold text-muted-foreground">Advanced Details</h3>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Teacher / Class</label>
                   <Input value={teacher} onChange={(e) => setTeacher(e.target.value)} placeholder="Teacher name" />
@@ -446,7 +446,7 @@ export default function DailyLog() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Lecture Number</label>
                   <Input value={lectureNumber} onChange={(e) => setLectureNumber(e.target.value)} placeholder="e.g. Lecture 5" />
@@ -485,7 +485,7 @@ export default function DailyLog() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Estimated Time (min)</label>
                   <Input type="number" value={estimatedMinutes} onChange={(e) => setEstimatedMinutes(e.target.value)} placeholder="30" />
@@ -528,7 +528,7 @@ export default function DailyLog() {
                 <Input value={resourcesNeeded} onChange={(e) => setResourcesNeeded(e.target.value)} placeholder="Books, videos, etc." />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Assignment Deadline</label>
                   <Input type="date" value={assignmentDeadline} onChange={(e) => setAssignmentDeadline(e.target.value)} />

@@ -219,7 +219,7 @@ export default function PendingTopics() {
               </p>
             )}
 
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <Button size="sm" variant="default" className="text-xs h-7" onClick={() => openClearDialog(topic)}>
                 <BookOpen className="h-3 w-3 mr-1" />
                 Start Study
@@ -321,7 +321,7 @@ export default function PendingTopics() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Pending Topics</h1>
           <p className="text-muted-foreground">

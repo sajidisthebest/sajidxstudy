@@ -195,7 +195,7 @@ export default function Topics() {
             </div>
             <div className="flex flex-1 flex-wrap gap-2">
               <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-                <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
                   <SelectValue placeholder="Subject" />
                 </SelectTrigger>
                 <SelectContent>
@@ -209,7 +209,7 @@ export default function Topics() {
               </Select>
 
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as TopicStatus | "all")}>
-                <SelectTrigger className="w-[160px] h-8 text-xs">
+                <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -222,7 +222,7 @@ export default function Topics() {
               </Select>
 
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[150px] h-8 text-xs">
+                <SelectTrigger className="w-full sm:w-[150px] h-8 text-xs">
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent>
